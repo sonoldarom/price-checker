@@ -149,16 +149,18 @@
   </div>
 
   <script>
-    // כתובת ה-Web App של Apps Script (אותה כתובת exec שכבר יש לכם)
+    // כתובת ה-Web App של Apps Script (הפרויקט הנפרד)
     const EXEC_URL = 'https://script.google.com/macros/s/AKfycbzHMfSbh07xW4GMQofb_EbpT2oU9wmF4riaOZCUjUAcAuVWGO4_c0ek6Hm4YGYoER70/exec';
 
-    // שליחת בקשה ל-Apps Script כ-API (JSON דרך fetch, לא google.script.run)
-    async function callApi(payload) {
-      const res = await fetch(EXEC_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // נשאר "simple request" - בלי preflight
-        body: JSON.stringify(payload)
+    // שליחת בקשה ל-Apps Script דרך GET (עוקף CORS, בניגוד ל-POST)
+    async function callApi(params) {
+      const url = new URL(EXEC_URL);
+      Object.keys(params).forEach(function (key) {
+        if (params[key] !== undefined && params[key] !== null) {
+          url.searchParams.set(key, params[key]);
+        }
       });
+      const res = await fetch(url.toString());
       if (!res.ok) {
         throw new Error('HTTP ' + res.status);
       }
@@ -244,7 +246,12 @@
       btn.innerText = 'מחפש...';
 
       try {
-        const response = await callApi({ action: 'lookup', username: user, password: pass, customers: customerNumbers });
+        const response = await callApi({
+          action: 'lookup',
+          username: user,
+          password: pass,
+          customers: customerNumbers.join(',')
+        });
 
         if (!response.ok) {
           errorDiv.innerText = response.message;
